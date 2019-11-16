@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import UserController from './app/controllers/UserController';
 
+import StudentController from './app/controllers/StudentController';
+
 import SessionController from './app/controllers/SessionController';
 
 import authMiddleware from './middlewares/auth';
@@ -18,5 +20,11 @@ routes.post('/sessions', SessionController.store);
 routes.use(authMiddleware);
 
 routes.put('/users', UserController.update);
+
+// Students routes
+
+routes.post('/students', StudentController.store);
+
+routes.put('/students', StudentController.update);
 
 export default routes;
