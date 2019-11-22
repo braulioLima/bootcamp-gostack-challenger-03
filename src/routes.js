@@ -8,6 +8,8 @@ import SessionController from './app/controllers/SessionController';
 
 import authMiddleware from './app/middlewares/auth';
 
+import PlanController from './app/controllers/PlanController';
+
 const routes = new Router();
 
 /**
@@ -26,5 +28,15 @@ routes.put('/users', UserController.update);
 routes.post('/students', StudentController.store);
 
 routes.put('/students', StudentController.update);
+
+// Plan's routes
+
+routes.post('/plans', PlanController.store);
+
+routes.get('/plans', PlanController.index);
+
+routes.put('/plans/:id', PlanController.update);
+
+routes.delete('/plans/:id', PlanController.delete);
 
 export default routes;
