@@ -3,7 +3,7 @@ const date_fns = require('date-fns').addMonths;
 module.exports = {
   up: queryInterface => {
     return queryInterface.bulkInsert(
-      'enrollments',
+      'subscriptions',
       [
         {
           student_id: 1,
