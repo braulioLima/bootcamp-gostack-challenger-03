@@ -1,5 +1,9 @@
 import 'dotenv/config';
+
+import { Op } from 'sequelize';
+
 import * as Yup from 'yup';
+
 import { addMonths, parseISO, format, isBefore } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 
@@ -50,25 +54,34 @@ class SubscriptionController {
       return res.status(400).json({ error: 'The plan does not exist' });
     }
 
+    const isoStartDate = parseISO(start_date);
+
+    const today = new Date();
+
     /**
-     * Check if the Subscription already exist
+     * Check if the start date is invalid
+     */
+    if (isBefore(isoStartDate, today)) {
+      return res.status(400).json({ error: 'Invalid date' });
+    }
+
+    /**
+     * Check if the subscription already exist
      */
     const isSubscription = await Subscription.findOne({
-      where: { student_id },
-      attributes: ['student_id'],
+      attributes: ['id'],
+      where: {
+        student_id,
+        end_date: {
+          [Op.gte]: start_date,
+        },
+      },
     });
 
     if (isSubscription) {
       return res
         .status(400)
-        .json({ error: 'This student already Subscription.' });
-    }
-
-    /**
-     * Check if the start date is invalid
-     */
-    if (isBefore(parseISO(start_date), new Date())) {
-      return res.status(400).json({ error: 'Invalid date' });
+        .json({ error: 'This student already Subscription active.' });
     }
 
     /**
@@ -81,7 +94,7 @@ class SubscriptionController {
     /**
      * Set end date based in start date
      */
-    const end_date = addMonths(parseISO(start_date), duration);
+    const end_date = addMonths(isoStartDate, duration);
 
     /**
      * Make te store a Subscription
@@ -94,22 +107,17 @@ class SubscriptionController {
       price,
     });
 
+    const dateStringFormat = "'dia' dd 'de' MMMM', às' H:mm'h";
     /**
      * Format start and end date
      */
-    const startDateFormated = format(
-      parseISO(start_date),
-      "'dia' dd 'de' MMMM', às' H:mm'h",
-      {
-        locale: ptBR,
-      }
-    );
+    const startDateFormated = format(isoStartDate, dateStringFormat, {
+      locale: ptBR,
+    });
 
-    const endDateFormated = format(
-      end_date,
-      "'dia' dd 'de' MMMM', às' H:mm'h",
-      { locale: ptBR }
-    );
+    const endDateFormated = format(end_date, dateStringFormat, {
+      locale: ptBR,
+    });
 
     const emailData = {
       name: isStudent.name,
