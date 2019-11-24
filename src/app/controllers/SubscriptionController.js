@@ -148,8 +148,11 @@ class SubscriptionController {
   async index(req, res) {
     const { page = 1 } = req.query;
 
+    const today = new Date();
+
     const subscriptions = await Subscription.findAll({
       attributes: ['id', 'start_date', 'end_date', 'price'],
+      where: { end_date: { [Op.gte]: today } },
       limit: process.env.APP_PAGE_SIZE,
       offset: (page - 1) * process.env.APP_PAGE_SIZE,
       include: [
