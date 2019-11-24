@@ -1,4 +1,6 @@
 import Sequelize, { Model } from 'sequelize';
+import { addMonths, parseISO } from 'date-fns';
+import Plan from './Plan';
 
 class Subscription extends Model {
   static init(sequelize) {
@@ -14,6 +16,16 @@ class Subscription extends Model {
         sequelize,
       }
     );
+
+    this.addHook('beforeUpdate', async subscription => {
+      const { plan_id, start_date } = subscription;
+
+      const { duration, price: monthPrice } = await Plan.findByPk(plan_id);
+
+      subscription.price = duration * monthPrice;
+
+      subscription.end_date = addMonths(start_date, duration);
+    });
 
     return this;
   }

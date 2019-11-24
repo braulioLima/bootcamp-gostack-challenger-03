@@ -4,7 +4,7 @@ import { Op } from 'sequelize';
 
 import * as Yup from 'yup';
 
-import { addMonths, parseISO, format, isBefore } from 'date-fns';
+import { addMonths, parseISO, format, isBefore, subDays } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 
 import Queue from '../../lib/Queue';
@@ -173,7 +173,84 @@ class SubscriptionController {
   }
 
   async update(req, res) {
-    return res.json();
+    const schema = Yup.object().shape({
+      subscription_id: Yup.number()
+        .integer()
+        .positive()
+        .required(),
+      student_id: Yup.number()
+        .integer()
+        .positive(),
+      plan_id: Yup.number()
+        .integer()
+        .positive(),
+      start_date: Yup.date(),
+    });
+
+    const validationObject = { subscription_id: req.params.id, ...req.body };
+
+    if (!(await schema.isValid(validationObject))) {
+      return res.status(400).json({ error: 'Validation fails' });
+    }
+
+    const { plan_id, start_date, student_id } = req.body;
+
+    /**
+     * Check if start date is at 24 hours after now
+     */
+    const today = new Date();
+
+    const isoStartDate = parseISO(start_date);
+
+    const dateSubDay = subDays(isoStartDate, 1);
+
+    const isPastDate = isBefore(dateSubDay, today);
+
+    if (isPastDate) {
+      return res.status(400).json({ error: 'Invalid date' });
+    }
+
+    /**
+     * Check if subscription id exist
+     */
+    const isSubscription = await Subscription.findByPk(req.params.id);
+
+    if (!isSubscription) {
+      return res.status(400).json({ error: 'Invalid Subscription id' });
+    }
+
+    /**
+     * Check if is plan
+     */
+    if (plan_id) {
+      const isPlan = await Plan.findByPk(plan_id);
+
+      if (!isPlan) {
+        return res.status(400).json({ error: 'Invalid plan' });
+      }
+    }
+
+    /**
+     * Check if is valid student
+     */
+    if (student_id) {
+      const isStudent = await Student.findByPk(student_id);
+
+      if (!isStudent) {
+        return res.status(400).json({ error: 'Invalid student' });
+      }
+    }
+
+    const subscription = await isSubscription.update(req.body);
+
+    return res.json({
+      id: subscription.id,
+      student_id: subscription.student_id,
+      plan_id: subscription.plan_id,
+      start_date: subscription.start_date,
+      end_date: subscription.end_date,
+      price: subscription.price,
+    });
   }
 
   async delete(req, res) {
