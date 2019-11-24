@@ -2,6 +2,8 @@ const date_fns = require('date-fns').addMonths;
 
 const subMonths = require('date-fns/subMonths');
 
+const addDays = require('date-fns/addDays');
+
 module.exports = {
   up: queryInterface => {
     return queryInterface.bulkInsert(
@@ -28,8 +30,8 @@ module.exports = {
         {
           student_id: 1,
           plan_id: 3,
-          start_date: new Date(),
-          end_date: date_fns(new Date(), 3),
+          start_date: addDays(new Date(), 3),
+          end_date: date_fns(addDays(new Date(), 3), 3),
           price: 109 * 3,
           created_at: new Date(),
           updated_at: new Date(),

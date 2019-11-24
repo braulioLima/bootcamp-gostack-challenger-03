@@ -17,26 +17,6 @@ class Subscription extends Model {
       }
     );
 
-    this.addHook('beforeSave', async subscription => {
-      const { plan_id, start_date } = subscription;
-
-      const { duration, price: monthPrice } = await Plan.findByPk(plan_id);
-
-      subscription.price = duration * monthPrice;
-
-      subscription.end_date = addMonths(start_date, duration);
-    });
-
-    this.addHook('beforeUpdate', async subscription => {
-      const { plan_id, start_date } = subscription;
-
-      const { duration, price: monthPrice } = await Plan.findByPk(plan_id);
-
-      subscription.price = duration * monthPrice;
-
-      subscription.end_date = addMonths(start_date, duration);
-    });
-
     return this;
   }
 

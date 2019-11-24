@@ -4,7 +4,14 @@ import { Op } from 'sequelize';
 
 import * as Yup from 'yup';
 
-import { addMonths, parseISO, format, isBefore, subDays } from 'date-fns';
+import {
+  addMonths,
+  parseISO,
+  format,
+  isBefore,
+  subDays,
+  subHours,
+} from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
 
 import Queue from '../../lib/Queue';
@@ -50,6 +57,7 @@ class SubscriptionController {
      * Verify if the plain exist
      */
     const isPlan = await Plan.findByPk(plan_id);
+
     if (!isPlan) {
       return res.status(400).json({ error: 'The plan does not exist' });
     }
@@ -84,10 +92,18 @@ class SubscriptionController {
         .json({ error: 'This student already Subscription active.' });
     }
 
+    const { duration, price: monthPrice } = isPlan;
+
     /**
      * Make te store a Subscription
      */
-    const { end_date, price } = await Subscription.create(req.body);
+    const { end_date, price } = await Subscription.create({
+      student_id,
+      plan_id,
+      start_date,
+      end_date: addMonths(isoStartDate, duration),
+      price: monthPrice * duration,
+    });
 
     const dateStringFormat = "'dia' dd 'de' MMMM', às' H:mm'h";
     /**
@@ -102,8 +118,6 @@ class SubscriptionController {
     });
 
     const { name, email } = isStudent;
-
-    const { duration } = isPlan;
 
     const emailData = {
       name,
@@ -160,77 +174,110 @@ class SubscriptionController {
 
   async update(req, res) {
     const schema = Yup.object().shape({
-      subscription_id: Yup.number()
+      subscriptionId: Yup.number()
         .integer()
         .positive()
         .required(),
-      student_id: Yup.number()
+      studentId: Yup.number()
         .integer()
         .positive(),
-      plan_id: Yup.number()
+      planId: Yup.number()
         .integer()
         .positive(),
       start_date: Yup.date(),
     });
 
-    const validationObject = { subscription_id: req.params.id, ...req.body };
+    const validationObject = { subscriptionId: req.params.id, ...req.body };
 
     if (!(await schema.isValid(validationObject))) {
       return res.status(400).json({ error: 'Validation fails' });
     }
 
-    const { plan_id, start_date, student_id } = req.body;
-
     /**
-     * Check if start date is at 24 hours after now
+     * Verify if have fields to update
      */
-    const today = new Date();
+    const { date, planId, studentId } = req.body;
 
-    const isoStartDate = parseISO(start_date);
-
-    const dateSubDay = subDays(isoStartDate, 1);
-
-    const isPastDate = isBefore(dateSubDay, today);
-
-    if (isPastDate) {
-      return res.status(400).json({ error: 'Invalid date' });
+    if (!(planId || date || studentId)) {
+      return res.json({ info: 'Not exist fields to update' });
     }
 
     /**
-     * Check if subscription id exist
+     * Check subscription exists
      */
     const isSubscription = await Subscription.findByPk(req.params.id);
 
     if (!isSubscription) {
-      return res.status(400).json({ error: 'Invalid Subscription id' });
+      return res.status(400).json({ error: 'Not exist this subscription' });
     }
 
     /**
-     * Check if is plan
+     * Check past dates
      */
-    if (plan_id) {
-      const isPlan = await Plan.findByPk(plan_id);
+    const isoDate = parseISO(date);
+
+    const today = subHours(new Date(), 3);
+
+    if (isBefore(isoDate, today)) {
+      return res
+        .status(400)
+        .json({ error: "Not it's possible choice past dates" });
+    }
+
+    /**
+     * Check if have one difference between now and start_date of 24 hours
+     */
+    const { start_date } = isSubscription;
+
+    const diffHours = subDays(start_date, 1);
+
+    if (isBefore(diffHours, today)) {
+      return res
+        .status(400)
+        .json({ error: 'Need 24 hours before start date to change' });
+    }
+
+    /**
+     * Check if plan exist
+     */
+    let isPlan;
+
+    if (planId) {
+      isPlan = await Plan.findByPk(planId);
 
       if (!isPlan) {
-        return res.status(400).json({ error: 'Invalid plan' });
+        return res.status(400).json({ error: 'Not exist a plan with this id' });
       }
     }
 
     /**
-     * Check if is valid student
+     * Check if student exist
      */
-    if (student_id) {
-      const isStudent = await Student.findByPk(student_id);
+    let isStudent;
+
+    if (studentId) {
+      isStudent = await Student.findByPk(studentId);
 
       if (!isStudent) {
-        return res.status(400).json({ error: 'Invalid student' });
+        return res.status(400).json({ error: 'Student not exist' });
       }
     }
 
-    const subscription = await isSubscription.update(req.body);
+    /**
+     * Make the update
+     */
+    const subscription = await isSubscription.update({
+      student_id: studentId,
+      plan_id: planId,
+      start_date: date,
+      end_date: addMonths(date, isPlan.duration),
+      price: isPlan.duration * isPlan.price,
+    });
 
+    /**
+     * format the response
+     */
     return res.json({
-      id: subscription.id,
       student_id: subscription.student_id,
       plan_id: subscription.plan_id,
       start_date: subscription.start_date,
