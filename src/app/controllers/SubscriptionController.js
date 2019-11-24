@@ -37,6 +37,7 @@ class SubscriptionController {
     /**
      * Verify if exist student with this id
      */
+
     const isStudent = await Student.findByPk(student_id);
 
     if (!isStudent) {
@@ -49,7 +50,6 @@ class SubscriptionController {
      * Verify if the plain exist
      */
     const isPlan = await Plan.findByPk(plan_id);
-
     if (!isPlan) {
       return res.status(400).json({ error: 'The plan does not exist' });
     }
@@ -85,27 +85,9 @@ class SubscriptionController {
     }
 
     /**
-     * Calculate total price
-     */
-    const { duration, price: monthPrice } = isPlan;
-
-    const price = duration * monthPrice;
-
-    /**
-     * Set end date based in start date
-     */
-    const end_date = addMonths(isoStartDate, duration);
-
-    /**
      * Make te store a Subscription
      */
-    await Subscription.create({
-      student_id,
-      plan_id,
-      start_date,
-      end_date,
-      price,
-    });
+    const { end_date, price } = await Subscription.create(req.body);
 
     const dateStringFormat = "'dia' dd 'de' MMMM', às' H:mm'h";
     /**
@@ -119,9 +101,13 @@ class SubscriptionController {
       locale: ptBR,
     });
 
+    const { name, email } = isStudent;
+
+    const { duration } = isPlan;
+
     const emailData = {
-      name: isStudent.name,
-      email: isStudent.email,
+      name,
+      email,
       startDate: startDateFormated,
       duration,
       endDate: endDateFormated,
