@@ -1,15 +1,19 @@
 import { Router } from 'express';
 
-import UserController from './app/controllers/UserController';
-import StudentController from './app/controllers/StudentController';
+import ChekinController from './app/controllers/ChekinController';
+import PlanController from './app/controllers/PlanController';
 import SessionController from './app/controllers/SessionController';
+import SubscriptionController from './app/controllers/SubscriptionController';
+import StudentController from './app/controllers/StudentController';
+import UserController from './app/controllers/UserController';
 
 import authMiddleware from './app/middlewares/auth';
 
-import PlanController from './app/controllers/PlanController';
-import SubscriptionController from './app/controllers/SubscriptionController';
-
 const routes = new Router();
+
+// Chekin's routes
+routes.post('/students/:id/checkins', ChekinController.store);
+routes.get('/students/:id/checkins', ChekinController.index);
 
 /**
  * Route to store a user
