@@ -1,6 +1,4 @@
 import Sequelize, { Model } from 'sequelize';
-import { addMonths, parseISO } from 'date-fns';
-import Plan from './Plan';
 
 class Subscription extends Model {
   static init(sequelize) {
