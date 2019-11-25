@@ -13,6 +13,12 @@ class HelpOrder extends Model {
       }
     );
 
+    this.addHook('beforeUpdate', async HelpOrder => {
+      const today = new Date();
+
+      HelpOrder.answer_at = today;
+    });
+
     return this;
   }
 
