@@ -146,7 +146,17 @@ class SubscriptionController {
   }
 
   async index(req, res) {
+    const validPage = Yup.number()
+      .integer()
+      .positive();
+
     const { page = 1 } = req.query;
+
+    if (!(await validPage.isValid(page))) {
+      return res
+        .status(400)
+        .json({ eror: 'Validation fails: invalid page format value' });
+    }
 
     const today = new Date();
 
@@ -155,21 +165,22 @@ class SubscriptionController {
       where: { end_date: { [Op.gte]: today } },
       limit: process.env.APP_PAGE_SIZE,
       offset: (page - 1) * process.env.APP_PAGE_SIZE,
+      order: [['end_date', 'DESC']],
       include: [
         {
           model: Student,
-          as: 'student',
+          as: 'student_data',
           attributes: ['id', 'name'],
         },
         {
           model: Plan,
-          as: 'plan',
+          as: 'plan_data',
           attributes: ['id', 'title'],
         },
       ],
     });
 
-    return res.json(subscriptions);
+    return res.json({ data: subscriptions, page });
   }
 
   async update(req, res) {

@@ -41,12 +41,26 @@ class PlanController {
   }
 
   async index(req, res) {
+    const validatePage = Yup.number()
+      .integer()
+      .positive();
+
+    const { page = 1 } = req.query;
+
+    if (!(await validatePage.isValid(page))) {
+      return res
+        .status(400)
+        .json({ error: 'Validation fails, invalid page format value' });
+    }
+
     const plans = await Plan.findAll({
       attributes: ['id', 'title', 'duration', 'price'],
-      order: ['duration'],
+      limit: process.env.APP_PAGE_SIZE,
+      offset: (page - 1) * process.env.APP_PAGE_SIZE,
+      order: [['duration', 'DESC']],
     });
 
-    return res.json(plans);
+    return res.json({ data: plans, page });
   }
 
   async update(req, res) {

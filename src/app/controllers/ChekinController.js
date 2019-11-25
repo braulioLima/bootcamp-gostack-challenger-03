@@ -45,13 +45,21 @@ class CheckinController {
      * Return all checkins with desc order of one student
      */
     const checkins = await Chekin.findAll({
+      attributes: ['id', ['created_at', 'hour'], 'student_id'],
       where: { student_id: id },
       limit: process.env.APP_PAGE_SIZE,
       offset: (page - 1) * process.env.APP_PAGE_SIZE,
+      include: [
+        {
+          model: Student,
+          as: 'student_data',
+          attributes: ['name'],
+        },
+      ],
       order: [['created_at', 'DESC']],
     });
 
-    return res.json(checkins);
+    return res.json({ data: checkins, page });
   }
 
   async store(req, res) {
