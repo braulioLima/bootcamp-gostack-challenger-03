@@ -1,6 +1,8 @@
 import { Router } from 'express';
 
+import AnswerOrderController from './app/controllers/AnswerOrderController';
 import ChekinController from './app/controllers/ChekinController';
+import HelpOrderController from './app/controllers/HelpOrderController';
 import PlanController from './app/controllers/PlanController';
 import SessionController from './app/controllers/SessionController';
 import SubscriptionController from './app/controllers/SubscriptionController';
@@ -13,7 +15,13 @@ const routes = new Router();
 
 // Chekin's routes
 routes.post('/students/:id/checkins', ChekinController.store);
+
 routes.get('/students/:id/checkins', ChekinController.index);
+
+// Help orders to students
+routes.post('/students/:id/help-orders', HelpOrderController.store);
+
+routes.get('/students/:id/help-orders', HelpOrderController.index);
 
 /**
  * Route to store a user
@@ -25,6 +33,11 @@ routes.post('/sessions', SessionController.store);
 routes.use(authMiddleware);
 
 routes.put('/users', UserController.update);
+
+// Answer a help order
+routes.post('/help-orders/:id/answer', AnswerOrderController.store);
+
+routes.get('/help-orders', AnswerOrderController.index);
 
 // Students routes
 
